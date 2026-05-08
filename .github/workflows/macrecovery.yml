@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       macos_version:
-        description: 'macOS Version (e.g., sonoma, ventura, monterey, bigsur, catalina)'
+        description: 'macOS Version to grab! :3'
         required: true
-        default: 'ventura'
+        default: 'tahoe'
         type: choice
         options:
+          - tahoe
+          - sequoia
           - sonoma
           - ventura
           - monterey
-          - bigsur
-          - catalina
 
 jobs:
   download-recovery:
@@ -31,15 +31,23 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Run macrecovery.py
+      - name: Run macrecovery.py with Board IDs!
         run: |
           cd Utilities/macrecovery
-          python macrecovery.py -os ${{ github.event.inputs.macos_version }} download
           
-          # Create the required folder structure
+          if [ "${{ github.event.inputs.macos_version }}" == "tahoe" ]; then
+            python macrecovery.py -b Mac-CFF7D910A743CAAF -m 00000000000000000 -os latest download
+          elif [ "${{ github.event.inputs.macos_version }}" == "sequoia" ]; then
+            python macrecovery.py -b Mac-7BA5B2D9E42DDD94 -m 00000000000000000 download
+          elif [ "${{ github.event.inputs.macos_version }}" == "sonoma" ]; then
+            python macrecovery.py -b Mac-827FAC58A8FDFA22 -m 00000000000000000 download
+          elif [ "${{ github.event.inputs.macos_version }}" == "ventura" ]; then
+            python macrecovery.py -b Mac-B4831CEBD52A0C4C -m 00000000000000000 download
+          elif [ "${{ github.event.inputs.macos_version }}" == "monterey" ]; then
+            python macrecovery.py -b Mac-E43C1C25D4880AD6 -m 00000000000000000 download
+          fi
+          
           mkdir -p com.apple.recovery.boot
-          
-          # Move the downloaded files into the folder
           mv *.dmg *.chunklist com.apple.recovery.boot/ || echo "No files to move"
         
       - name: Upload Recovery Artifact
