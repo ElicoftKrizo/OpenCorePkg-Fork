@@ -1,0 +1,50 @@
+name: Fetch Mac Recovery Files
+
+on:
+  workflow_dispatch:
+    inputs:
+      macos_version:
+        description: 'macOS Version (e.g., sonoma, ventura, monterey, bigsur, catalina)'
+        required: true
+        default: 'ventura'
+        type: choice
+        options:
+          - sonoma
+          - ventura
+          - monterey
+          - bigsur
+          - catalina
+
+jobs:
+  download-recovery:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout OpenCorePkg (macrecovery)
+        uses: actions/checkout@v4
+        with:
+          repository: acidanthera/OpenCorePkg
+          sparse-checkout: 'Utilities/macrecovery'
+          
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run macrecovery.py
+        run: |
+          cd Utilities/macrecovery
+          python macrecovery.py -os ${{ github.event.inputs.macos_version }} download
+          
+          # Create the required folder structure
+          mkdir -p com.apple.recovery.boot
+          
+          # Move the downloaded files into the folder
+          mv *.dmg *.chunklist com.apple.recovery.boot/ || echo "No files to move"
+        
+      - name: Upload Recovery Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: com.apple.recovery.boot-${{ github.event.inputs.macos_version }}
+          path: Utilities/macrecovery/com.apple.recovery.boot/
+          retention-days: 3
